@@ -1,0 +1,12 @@
+/config.yaml
+/config.yml
+/.tools/
+/data/
+/bin/
+/web/
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.exe
+/.env

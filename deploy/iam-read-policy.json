@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "AuditPlatformReadIAM",
+    "Effect": "Allow",
+    "Action": [
+      "iam:GetAccountAuthorizationDetails", "iam:ListAccountAliases",
+      "iam:GetPolicy", "iam:GetPolicyVersion", "iam:GetLoginProfile",
+      "iam:ListMFADevices", "iam:ListAccessKeys", "iam:GetAccessKeyLastUsed",
+      "iam:GenerateCredentialReport", "iam:GetCredentialReport"
+    ],
+    "Resource": "*"
+  }]
+}

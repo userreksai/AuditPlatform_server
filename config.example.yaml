@@ -1,0 +1,27 @@
+# Copy to config.yaml; keep this file private and restart the service after editing.
+server:
+  address: "127.0.0.1:8080"
+  web_directory: "./web"
+  secure_cookie: false # true when accessed through HTTPS
+  session_hours: 12
+database:
+  path: "./data/audit.db"
+auth:
+  username: "auditroot"
+  password: "a181818."
+  # password_hash: "$2a$..." # optional bcrypt; takes precedence over password
+sync:
+  time: "09:00"
+  timezone: "Asia/Shanghai"
+  timeout_minutes: 30
+# No accounts is valid: configure keys then restart and click 全量获取.
+accounts: []
+# accounts:
+#   - id: "production" # stable unique local key, not the AWS account ID
+#     name: "生产账号"
+#     owner: "运维组"
+#     region: "us-east-1" # AWS China: cn-north-1
+#     expected_account_id: "123456789012" # recommended: fail if keys belong elsewhere
+#     access_key_id: "REPLACE_ME"
+#     secret_access_key: "REPLACE_ME"
+#     session_token: "" # optional temporary credentials

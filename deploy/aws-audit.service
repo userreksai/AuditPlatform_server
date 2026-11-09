@@ -1,0 +1,26 @@
+[Unit]
+Description=AWS IAM Account Audit Platform
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aws-audit
+Group=aws-audit
+WorkingDirectory=/var/lib/aws-audit
+ExecStart=/opt/aws-audit/current/audit-server -config /etc/aws-audit/config.yaml
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/aws-audit
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target
