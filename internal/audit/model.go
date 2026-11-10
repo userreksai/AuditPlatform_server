@@ -60,6 +60,9 @@ type AuditUser struct {
 	IPStatus            string      `json:"ip_status"`
 	IPExplanation       string      `json:"ip_explanation"`
 	IPRanges            []string    `json:"ip_ranges"`
+	SecretsAccess       string      `json:"secrets_access"`
+	SecretsExplanation  string      `json:"secrets_explanation"`
+	SecretsEvidence     []string    `json:"secrets_evidence"`
 	Warnings            []string    `json:"warnings"`
 }
 type Annotation struct {

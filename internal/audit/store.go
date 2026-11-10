@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -94,6 +95,16 @@ func (s *Store) ReadDashboard(configs []AccountConfig) ([]Account, []AuditUser, 
 		accounts = append(accounts, a)
 		for i := range u {
 			u[i].AccountName = c.Name
+			// 升级前保存的快照没有该字段；策略文档已在快照中，直接补算，无需重新采集。
+			if u[i].SecretsAccess == "" {
+				complete := true
+				for _, w := range u[i].Warnings {
+					if strings.Contains(w, "详情缺失") {
+						complete = false
+					}
+				}
+				SummarizeSecrets(&u[i], complete)
+			}
 			var an Annotation
 			e = s.db.QueryRow(`SELECT owner,review_status,note FROM annotations WHERE account_id=? AND user_id=?`, u[i].AccountID, u[i].UserID).Scan(&an.Owner, &an.ReviewStatus, &an.Note)
 			if e == nil {
