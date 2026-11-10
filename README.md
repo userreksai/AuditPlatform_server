@@ -6,6 +6,8 @@ Go + SQLite 后端，配套 [Vue 前端](https://github.com/userreksai/AuditPlat
 
 支持运行 systemd 的 Debian/Ubuntu、Rocky/Alma/RHEL/Fedora，amd64 或 arm64，需要联网下载依赖。安装脚本会安装基础工具，从官方站点下载并验证 Go/Node 的 SHA256，构建两端、执行 Go 测试并安装服务。
 
+Node.js 的 Linux 运行依赖也由脚本安装：Debian/Ubuntu 使用 `libatomic1`、`libstdc++6`，dnf/yum 系统使用 `libatomic`、`libstdc++`。下载后先执行 `node --version`，验证成功才继续拉取和构建前端。使用 `--no-deps` 时需自行准备这些运行库。
+
 ```bash
 git clone https://github.com/userreksai/AuditPlatform_server.git
 cd AuditPlatform_server
@@ -120,3 +122,25 @@ sudo systemctl start aws-audit
 ```
 
 备份包含账号信息和 AWS 凭证配置，应按服务器配置文件管理。
+
+## 安装错误：缺少 libatomic.so.1
+
+如果旧安装脚本在执行 npm 时出现 `node: error while loading shared libraries: libatomic.so.1`，在后端仓库中更新并重新安装：
+
+```bash
+git pull --ff-only
+sudo bash install.sh
+```
+
+新脚本会自动安装缺少的依赖。也可先手动补齐运行库后重试：
+
+```bash
+# Debian / Ubuntu
+sudo apt-get update
+sudo apt-get install -y libatomic1 libstdc++6
+
+# RHEL / Rocky / Alma / Fedora（旧系统使用 yum）
+sudo dnf install -y libatomic libstdc++
+```
+
+已有配置和数据库会保留。若错误包含 `GLIBC_x.y not found` 或 `GLIBCXX_x.y not found`，则是 Node.js 与系统 ABI 不兼容，需要满足对应 Node.js 版本的系统要求；仅安装 libatomic 不能解决该类错误。[Node.js 官方二进制系统要求](https://github.com/nodejs/node/blob/main/BUILDING.md#official-binary-platforms-and-toolchains)。

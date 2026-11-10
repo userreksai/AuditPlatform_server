@@ -30,13 +30,13 @@ command -v systemctl >/dev/null || { echo 'systemd is required.' >&2; exit 1; }
 if ((INSTALL_DEPS)); then
   if command -v apt-get >/dev/null; then
     apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl git tar gzip xz-utils python3
+    DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl git tar gzip xz-utils python3 libatomic1 libstdc++6
   elif command -v dnf >/dev/null; then
-    dnf install -y ca-certificates curl git tar gzip xz python3 shadow-utils
+    dnf install -y ca-certificates curl git tar gzip xz python3 shadow-utils libatomic libstdc++
   elif command -v yum >/dev/null; then
-    yum install -y ca-certificates curl git tar gzip xz python3 shadow-utils
+    yum install -y ca-certificates curl git tar gzip xz python3 shadow-utils libatomic libstdc++
   else
-    echo 'Unsupported package manager. Install curl/git/tar/gzip/xz/python3 manually, then use --no-deps.' >&2
+    echo 'Unsupported package manager. Install curl/git/tar/gzip/xz/python3 and the libatomic/libstdc++ runtimes manually, then use --no-deps.' >&2
     exit 1
   fi
 fi
@@ -86,6 +86,20 @@ tar -xJf "$STAGE/$NODE_FILE" -C "$STAGE/node" --strip-components=1
 export PATH="$STAGE/node/bin:$STAGE/go/bin:$PATH"
 export CI=true
 export GOPATH="$STAGE/go-cache" GOCACHE="$STAGE/build-cache"
+
+# Verify downloaded Node before cloning sources or invoking npm.
+if ! NODE_CHECK_OUTPUT="$(node --version 2>&1)"; then
+  printf 'Downloaded Node.js %s cannot run on this system:\n%s\n' "$NODE_VERSION" "$NODE_CHECK_OUTPUT" >&2
+  printf '%s\n' \
+    'For missing libatomic.so.1 or libstdc++.so.6, install the system runtime packages:' \
+    '  Debian/Ubuntu: sudo apt-get update && sudo apt-get install -y libatomic1 libstdc++6' \
+    '  RHEL/Rocky/Alma/Fedora: sudo dnf install -y libatomic libstdc++ (or use yum)' \
+    'If --no-deps was used, install these packages manually or rerun without --no-deps.' \
+    'For GLIBC/GLIBCXX version errors, use a system supported by the downloaded Node.js release; installing libatomic alone cannot resolve ABI incompatibility.' >&2
+  exit 1
+fi
+printf 'Node.js runtime verified: %s\n' "$NODE_CHECK_OUTPUT"
+# End Node runtime preflight.
 
 if [[ -z $WEB_SOURCE ]]; then
   if [[ -f $SOURCE_DIR/../AuditPlatform_web/package.json ]]; then
