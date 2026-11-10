@@ -15,10 +15,10 @@ sudo bash install.sh
 未找到相邻的 `AuditPlatform_web` 时自动克隆前端仓库。也可指定现有前端源码：
 
 ```bash
-sudo bash install.sh --web-source /path/to/AuditPlatform_web --listen 0.0.0.0:8080
+sudo bash install.sh --web-source /path/to/AuditPlatform_web --listen 0.0.0.0:10001
 ```
 
-浏览器访问 `http://服务器IP:8080`。默认账号 **auditroot**，默认密码 **a181818.**（末尾英文句号属于密码）。首次安装使用空账号列表，界面正常显示待配置状态，不会生成假 AWS 数据。
+浏览器访问 `http://服务器IP:10001`。默认账号 **auditroot**，默认密码 **a181818.**（末尾英文句号属于密码）。首次安装使用空账号列表，界面正常显示待配置状态，不会生成假 AWS 数据。
 
 安装位置：程序和前端 `/opt/aws-audit/current`；配置 `/etc/aws-audit/config.yaml`；数据库 `/var/lib/aws-audit/audit.db`。配置由 root 持有，服务组只读；数据库由专用 `aws-audit` 用户读写。更新前先构建、测试，再切换程序版本；保留已有配置和数据库，服务启动失败时尝试恢复上个程序版本。`--no-start` 仅安装并启用服务，`--no-deps` 跳过系统依赖安装。已有配置的监听地址不会被 `--listen` 覆盖。
 
@@ -28,7 +28,7 @@ sudo journalctl -u aws-audit -f
 sudo systemctl restart aws-audit
 ```
 
-如需 HTTPS，参考 [Nginx 配置](deploy/nginx.conf.example)，将 Go 监听改为 `127.0.0.1:8080`，配置 `server.secure_cookie: true`。
+如需 HTTPS，参考 [Nginx 配置](deploy/nginx.conf.example)，将 Go 监听改为 `127.0.0.1:10001`，配置 `server.secure_cookie: true`。
 
 ## 配置账号和登录信息
 
@@ -36,7 +36,7 @@ sudo systemctl restart aws-audit
 
 ```yaml
 server:
-  address: "0.0.0.0:8080"
+  address: "0.0.0.0:10001"
   web_directory: "/opt/aws-audit/current/web"
   secure_cookie: false
   session_hours: 12
@@ -104,7 +104,7 @@ go build -o audit-server ./cmd/audit-server
 ./audit-server -config config.yaml
 ```
 
-前端开发代理 `/api` 到 `127.0.0.1:8080`。生产环境构建前端后，将 `dist` 复制为配置指定的 `web_directory`，由 Go 同源托管；不需要单独运行 Vite。会话使用 HttpOnly、SameSite Cookie，写操作验证同源，登录失败有速率限制。
+前端开发代理 `/api` 到 `127.0.0.1:10001`。生产环境构建前端后，将 `dist` 复制为配置指定的 `web_directory`，由 Go 同源托管；不需要单独运行 Vite。会话使用 HttpOnly、SameSite Cookie，写操作验证同源，登录失败有速率限制。
 
 API：`POST /api/auth/login`、`GET /api/auth/me`、`POST /api/auth/logout`、`GET /api/dashboard`、`POST /api/sync`、`GET /api/sync/status`、`PATCH /api/users/{accountId}/{userId}/annotations`。除登录和健康检查，均需登录。手动获取返回 202；已有任务返回 409；未配置 AWS 账号返回清晰错误。无真实凭证时可验证登录、存储、调度、策略解析及 API，不能声称已通过真实 AWS 账号采集。
 
