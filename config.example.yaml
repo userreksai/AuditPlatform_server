@@ -1,6 +1,6 @@
 # Copy to config.yaml; keep this file private and restart the service after editing.
 server:
-  address: "127.0.0.1:8080"
+  address: "127.0.0.1:10001"
   web_directory: "./web"
   secure_cookie: false # true when accessed through HTTPS
   session_hours: 12

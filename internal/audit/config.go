@@ -52,7 +52,7 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	c := &Config{}
-	c.Server.Address = "127.0.0.1:8080"
+	c.Server.Address = "127.0.0.1:10001"
 	c.Server.WebDirectory = "./web"
 	c.Server.SessionHours = 12
 	c.Database.Path = "./data/audit.db"

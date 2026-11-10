@@ -6,7 +6,7 @@ trap 'printf "Installation failed at line %s; existing config/database are retai
 
 SOURCE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 WEB_SOURCE="${WEB_SOURCE:-}"
-LISTEN="${LISTEN:-0.0.0.0:8080}"
+LISTEN="${LISTEN:-0.0.0.0:10001}"
 START=1
 INSTALL_DEPS=1
 while (($#)); do
@@ -16,7 +16,7 @@ while (($#)); do
     --no-start) START=0; shift ;;
     --no-deps) INSTALL_DEPS=0; shift ;;
     -h|--help)
-      printf '%s\n' 'sudo bash install.sh [--web-source ../AuditPlatform_web] [--listen 0.0.0.0:8080] [--no-start] [--no-deps]' 'Installs to /opt/aws-audit; preserves /etc/aws-audit/config.yaml and /var/lib/aws-audit.'
+      printf '%s\n' 'sudo bash install.sh [--web-source ../AuditPlatform_web] [--listen 0.0.0.0:10001] [--no-start] [--no-deps]' 'Installs to /opt/aws-audit; preserves /etc/aws-audit/config.yaml and /var/lib/aws-audit.'
       exit 0 ;;
     *) printf 'Unknown argument: %s\n' "$1" >&2; exit 2 ;;
   esac
