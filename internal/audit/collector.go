@@ -247,6 +247,7 @@ func (collector AWSCollector) Collect(ctx context.Context, c AccountConfig) (Acc
 			}
 		}
 		SummarizeIP(&u, complete)
+		SummarizeSecrets(&u, complete)
 		sort.Strings(u.Groups)
 		users = append(users, u)
 	}
