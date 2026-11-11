@@ -20,7 +20,7 @@ sudo bash install.sh
 sudo bash install.sh --web-source /path/to/AuditPlatform_web --listen 0.0.0.0:10001
 ```
 
-浏览器访问 `http://服务器IP:10001`。默认账号 **auditroot**，默认密码 **a181818.**（末尾英文句号属于密码）。首次安装使用空账号列表，界面正常显示待配置状态，不会生成假 AWS 数据。
+浏览器访问 `http://服务器IP:10001`。登录账号和密码在 `/etc/aws-audit/config.yaml` 的 `auth` 部分配置，上线前请修改默认密码。首次安装使用空账号列表，界面正常显示待配置状态，不会生成假 AWS 数据。
 
 安装位置：程序和前端 `/opt/aws-audit/current`；配置 `/etc/aws-audit/config.yaml`；数据库 `/var/lib/aws-audit/audit.db`。配置由 root 持有，服务组只读；数据库由专用 `aws-audit` 用户读写。更新前先构建、测试，再切换程序版本；保留已有配置和数据库，服务启动失败时尝试恢复上个程序版本。`--no-start` 仅安装并启用服务，`--no-deps` 跳过系统依赖安装。已有配置的监听地址不会被 `--listen` 覆盖。
 
@@ -46,7 +46,7 @@ database:
   path: "/var/lib/aws-audit/audit.db"
 auth:
   username: "auditroot"
-  password: "a181818."
+  password: "REPLACE_ME"
   # password_hash: "$2a$..." # 可选 bcrypt；填写时优先使用 hash
 sync:
   time: "09:00"
