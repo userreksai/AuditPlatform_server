@@ -46,7 +46,7 @@ database:
   path: "/var/lib/aws-audit/audit.db"
 auth:
   username: "auditroot"
-  password: "a181818."
+  password: ""
   # password_hash: "$2a$..." # 可选 bcrypt；填写时优先使用 hash
 sync:
   time: "09:00"
