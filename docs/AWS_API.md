@@ -16,6 +16,20 @@
 | [ListAccessKeys](https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccessKeys.html) | 读取每把 Key ID、状态和创建时间，仍需处理分页；AWS 不会再次返回 Secret Access Key。 |
 | [GetAccessKeyLastUsed](https://docs.aws.amazon.com/IAM/latest/APIReference/API_GetAccessKeyLastUsed.html) | 获取每把 Key 最后使用时间、服务和区域。 |
 
+## RDS 主用户密码托管（SecretsManager 页面）
+
+| 官方 API | 本平台用途 |
+| --- | --- |
+| [DescribeDBInstances](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBInstances.html) / [DescribeDBClusters](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBClusters.html) | 按 `rds_regions`（默认为账号 `region`）逐区域翻页，取实例/集群标识、引擎、`MasterUsername` 与 `MasterUserSecret`（SecretArn、SecretStatus、KmsKeyId）。存在 MasterUserSecret 即“已迁移至 Secrets Manager”。属于集群的实例在集群行展示。 |
+| [DescribeSecret](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_DescribeSecret.html) | 读取 `RotationEnabled`、`RotationRules`（AutomaticallyAfterDays / ScheduleExpression / Duration）、`LastRotatedDate`、`NextRotationDate`、`OwningService`、`DeletedDate`。只读元数据，不调用 GetSecretValue，不读取密码。 |
+
+- 实际轮换周期：优先 AutomaticallyAfterDays，否则解析 ScheduleExpression 的 rate()；cron 原样展示。
+- 下次轮换最晚时间：AWS 的 NextRotationDate 语义为“在此时间或之前轮换”，直接使用；AWS 未返回时按“上次轮换 + 周期”推算并标注“推算”。
+- 迁移核验结论：未托管 → 未迁移；SecretStatus=impaired 或 Secret 已计划删除 → 存在问题；自动轮换关闭、OwningService 不是 rds、无轮换记录、已超过最晚轮换时间、状态 creating/rotating → 需关注；DescribeSecret 失败 → 未能完整核验；其余 → 核验通过。
+- 时间以 UTC 存储，前端按北京时间（Asia/Shanghai）展示。
+
+用户审计表“RDS 托管信息查询”列：按已采集的身份策略与权限边界，评估用户对 `rds:DescribeDBInstances` / `rds:DescribeDBClusters`（看到是否托管）与 `secretsmanager:DescribeSecret`（看到轮换详情）的权限；“仅可查看是否托管”表示缺少 DescribeSecret。与其他权限列一样不评估 SCP 与资源策略。
+
 ## 凭证报告时效
 
 [AWS 凭证报告说明](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html)：GenerateCredentialReport 后需等待 COMPLETE，再读取 GetCredentialReport。AWS 最多每四小时重新生成一次，期间请求会返回已有报告。因此平台“获取全部”会重新调用 AWS，但密码最后使用时间可能来自四小时内已有报告，必须标注报告生成时间。password_last_used 的 no_information 与 N/A 含义不同，不能伪造时间或断言绝对从未登录。报告包含 root 行，本平台以 IAM 用户为维度，不将该行冒充普通用户。
@@ -50,6 +64,16 @@
         "iam:GetAccessKeyLastUsed",
         "iam:GenerateCredentialReport",
         "iam:GetCredentialReport"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AuditPlatformReadRDSSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBClusters",
+        "secretsmanager:DescribeSecret"
       ],
       "Resource": "*"
     }

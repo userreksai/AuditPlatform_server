@@ -52,6 +52,14 @@ func NewHandler(service *Service) http.Handler {
 		}
 		reply(w, 200, d)
 	})
+	m.HandleFunc("GET /api/rds-secrets", func(w http.ResponseWriter, r *http.Request) {
+		v, e := service.RDSSecrets()
+		if e != nil {
+			fail(w, 500, "读取 RDS 托管数据失败")
+			return
+		}
+		reply(w, 200, v)
+	})
 	m.HandleFunc("GET /api/sync/status", func(w http.ResponseWriter, r *http.Request) {
 		d, e := service.Status()
 		if e != nil {

@@ -70,9 +70,23 @@ func (s *Service) runSync(id int64) {
 			log.Printf("snapshot write failed: %v", e)
 			continue
 		}
-		if a.Status == "partial" {
+		rdsOK := true
+		if rc, ok := s.Collector.(RDSCollector); ok {
+			inv := rc.CollectRDS(ctx, c, a)
+			if e = s.Store.SaveRDS(c.ID, inv); e != nil {
+				log.Printf("rds snapshot write failed: %v", e)
+				inv.Status, inv.Error = "error", "数据库存储失败"
+			}
+			if inv.Status != "success" {
+				rdsOK = false
+				messages = append(messages, c.Name+": RDS 托管信息 "+inv.Error)
+			}
+		}
+		if a.Status == "partial" || !rdsOK {
 			partial++
-			messages = append(messages, c.Name+": "+a.Error)
+			if a.Status == "partial" {
+				messages = append(messages, c.Name+": "+a.Error)
+			}
 		} else {
 			success++
 		}
@@ -121,6 +135,9 @@ func (s *Service) Dashboard() (Dashboard, error) {
 	}
 	status, e := s.Status()
 	return Dashboard{Accounts: a, Users: u, Sync: status}, e
+}
+func (s *Service) RDSSecrets() (RDSSecretsView, error) {
+	return s.Store.ReadRDS(s.Config.Accounts)
 }
 func (s *Service) RunScheduler() {
 	s.wg.Add(1)

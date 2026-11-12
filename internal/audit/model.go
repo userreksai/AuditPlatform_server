@@ -40,30 +40,33 @@ type Policy struct {
 	Warnings     []string        `json:"warnings"`
 }
 type AuditUser struct {
-	AccountID           string      `json:"account_id"`
-	AccountName         string      `json:"account_name"`
-	UserID              string      `json:"user_id"`
-	Username            string      `json:"username"`
-	ARN                 string      `json:"arn"`
-	Path                string      `json:"path"`
-	Owner               string      `json:"owner"`
-	ReviewStatus        string      `json:"review_status"`
-	Note                string      `json:"note"`
-	ConsoleAccess       string      `json:"console_access"`
-	MFAEnabled          string      `json:"mfa_enabled"`
-	CreatedAt           string      `json:"created_at"`
-	PasswordLastUsed    string      `json:"password_last_used"`
-	Groups              []string    `json:"groups"`
-	AccessKeys          []AccessKey `json:"access_keys"`
-	Policies            []Policy    `json:"policies"`
-	PermissionsBoundary *Policy     `json:"permissions_boundary,omitempty"`
-	IPStatus            string      `json:"ip_status"`
-	IPExplanation       string      `json:"ip_explanation"`
-	IPRanges            []string    `json:"ip_ranges"`
-	SecretsAccess       string      `json:"secrets_access"`
-	SecretsExplanation  string      `json:"secrets_explanation"`
-	SecretsEvidence     []string    `json:"secrets_evidence"`
-	Warnings            []string    `json:"warnings"`
+	AccountID            string      `json:"account_id"`
+	AccountName          string      `json:"account_name"`
+	UserID               string      `json:"user_id"`
+	Username             string      `json:"username"`
+	ARN                  string      `json:"arn"`
+	Path                 string      `json:"path"`
+	Owner                string      `json:"owner"`
+	ReviewStatus         string      `json:"review_status"`
+	Note                 string      `json:"note"`
+	ConsoleAccess        string      `json:"console_access"`
+	MFAEnabled           string      `json:"mfa_enabled"`
+	CreatedAt            string      `json:"created_at"`
+	PasswordLastUsed     string      `json:"password_last_used"`
+	Groups               []string    `json:"groups"`
+	AccessKeys           []AccessKey `json:"access_keys"`
+	Policies             []Policy    `json:"policies"`
+	PermissionsBoundary  *Policy     `json:"permissions_boundary,omitempty"`
+	IPStatus             string      `json:"ip_status"`
+	IPExplanation        string      `json:"ip_explanation"`
+	IPRanges             []string    `json:"ip_ranges"`
+	SecretsAccess        string      `json:"secrets_access"`
+	SecretsExplanation   string      `json:"secrets_explanation"`
+	SecretsEvidence      []string    `json:"secrets_evidence"`
+	RDSSecretAccess      string      `json:"rds_secret_access"`
+	RDSSecretExplanation string      `json:"rds_secret_explanation"`
+	RDSSecretEvidence    []string    `json:"rds_secret_evidence"`
+	Warnings             []string    `json:"warnings"`
 }
 type Annotation struct {
 	Owner        string `json:"owner"`

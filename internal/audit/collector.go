@@ -44,16 +44,24 @@ func safeError(err error) string {
 	return "AWS 请求或响应处理失败"
 }
 
-func (collector AWSCollector) Collect(ctx context.Context, c AccountConfig) (Account, []AuditUser, error) {
-	a := Account{Name: c.Name, Owner: c.Owner, Status: "success"}
-	users := []AuditUser{}
+func (collector AWSCollector) awsConfig(ctx context.Context, c AccountConfig) (aws.Config, error) {
 	clientHTTP := collector.HTTPClient
 	if clientHTTP == nil {
 		clientHTTP = &http.Client{Timeout: 45 * time.Second}
 	}
 	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(c.Region), awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, c.SessionToken)), awsconfig.WithHTTPClient(clientHTTP), awsconfig.WithRetryMaxAttempts(4))
 	if err != nil {
-		return a, nil, fmt.Errorf("初始化 AWS 客户端失败")
+		return cfg, fmt.Errorf("初始化 AWS 客户端失败")
+	}
+	return cfg, nil
+}
+
+func (collector AWSCollector) Collect(ctx context.Context, c AccountConfig) (Account, []AuditUser, error) {
+	a := Account{Name: c.Name, Owner: c.Owner, Status: "success"}
+	users := []AuditUser{}
+	cfg, err := collector.awsConfig(ctx, c)
+	if err != nil {
+		return a, nil, err
 	}
 	identity, err := sts.NewFromConfig(cfg).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -248,6 +256,7 @@ func (collector AWSCollector) Collect(ctx context.Context, c AccountConfig) (Acc
 		}
 		SummarizeIP(&u, complete)
 		SummarizeSecrets(&u, complete)
+		SummarizeRDSSecretVisibility(&u, complete)
 		sort.Strings(u.Groups)
 		users = append(users, u)
 	}

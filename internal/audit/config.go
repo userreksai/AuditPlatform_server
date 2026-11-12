@@ -44,6 +44,8 @@ type AccountConfig struct {
 	AccessKeyID       string `yaml:"access_key_id"`
 	SecretAccessKey   string `yaml:"secret_access_key"`
 	SessionToken      string `yaml:"session_token"`
+	// RDSRegions 为采集 RDS 主密码托管信息的区域；为空时只采集 region。
+	RDSRegions []string `yaml:"rds_regions"`
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -110,6 +112,19 @@ func LoadConfig(path string) (*Config, error) {
 		if a.Name == "" {
 			a.Name = a.ID
 		}
+		regions := []string{}
+		seenRegion := map[string]bool{}
+		for _, r := range a.RDSRegions {
+			r = strings.TrimSpace(r)
+			if r == "" || strings.ContainsAny(r, " /:") {
+				return nil, fmt.Errorf("invalid rds_regions for %s", a.ID)
+			}
+			if !seenRegion[r] {
+				seenRegion[r] = true
+				regions = append(regions, r)
+			}
+		}
+		a.RDSRegions = regions
 		if a.ExpectedAccountID != "" {
 			if len(a.ExpectedAccountID) != 12 || strings.IndexFunc(a.ExpectedAccountID, func(r rune) bool { return r < '0' || r > '9' }) >= 0 {
 				return nil, fmt.Errorf("invalid expected_account_id for %s", a.ID)

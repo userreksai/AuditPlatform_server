@@ -28,6 +28,7 @@ func OpenStore(path string) (*Store, error) {
 	s := &Store{db: db}
 	_, err = db.Exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
 CREATE TABLE IF NOT EXISTS snapshots (config_id TEXT PRIMARY KEY,account TEXT NOT NULL,users TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS rds_snapshots (config_id TEXT PRIMARY KEY,data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS annotations (account_id TEXT NOT NULL,user_id TEXT NOT NULL,owner TEXT NOT NULL,review_status TEXT NOT NULL,note TEXT NOT NULL,PRIMARY KEY(account_id,user_id));
 CREATE TABLE IF NOT EXISTS sync_logs (id INTEGER PRIMARY KEY AUTOINCREMENT,started_at TEXT NOT NULL,finished_at TEXT NOT NULL DEFAULT '',trigger TEXT NOT NULL,status TEXT NOT NULL,accounts_total INTEGER NOT NULL,accounts_succeeded INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '');
 UPDATE sync_logs SET status='error',finished_at=strftime('%Y-%m-%dT%H:%M:%SZ','now'),error='服务重启，上次同步中断' WHERE status='running';`)
@@ -104,6 +105,15 @@ func (s *Store) ReadDashboard(configs []AccountConfig) ([]Account, []AuditUser, 
 					}
 				}
 				SummarizeSecrets(&u[i], complete)
+			}
+			if u[i].RDSSecretAccess == "" {
+				complete := true
+				for _, w := range u[i].Warnings {
+					if strings.Contains(w, "详情缺失") {
+						complete = false
+					}
+				}
+				SummarizeRDSSecretVisibility(&u[i], complete)
 			}
 			var an Annotation
 			e = s.db.QueryRow(`SELECT owner,review_status,note FROM annotations WHERE account_id=? AND user_id=?`, u[i].AccountID, u[i].UserID).Scan(&an.Owner, &an.ReviewStatus, &an.Note)
@@ -185,4 +195,71 @@ func (s *Store) PruneLogs() error {
 		return fmt.Errorf("prune logs: %w", e)
 	}
 	return nil
+}
+
+func (s *Store) rdsSnapshot(id string) (RDSInventory, bool, error) {
+	var raw string
+	e := s.db.QueryRow(`SELECT data FROM rds_snapshots WHERE config_id=?`, id).Scan(&raw)
+	if e == sql.ErrNoRows {
+		return RDSInventory{}, false, nil
+	}
+	if e != nil {
+		return RDSInventory{}, false, e
+	}
+	var inv RDSInventory
+	if e = json.Unmarshal([]byte(raw), &inv); e != nil {
+		return inv, false, e
+	}
+	return inv, true, nil
+}
+
+// SaveRDS 保存 RDS 托管清单；整体失败时保留上次成功采集的条目，只更新状态与错误。
+func (s *Store) SaveRDS(id string, inv RDSInventory) error {
+	if inv.Status == "error" {
+		if old, ok, e := s.rdsSnapshot(id); e == nil && ok {
+			old.Status, old.Error = inv.Status, inv.Error
+			if inv.AccountID != "" {
+				old.AccountID = inv.AccountID
+			}
+			inv = old
+		}
+	}
+	if inv.Items == nil {
+		inv.Items = []RDSSecret{}
+	}
+	b, e := json.Marshal(inv)
+	if e != nil {
+		return e
+	}
+	_, e = s.db.Exec(`INSERT INTO rds_snapshots(config_id,data) VALUES(?,?) ON CONFLICT(config_id) DO UPDATE SET data=excluded.data`, id, string(b))
+	return e
+}
+
+func (s *Store) ReadRDS(configs []AccountConfig) (RDSSecretsView, error) {
+	v := RDSSecretsView{Accounts: []RDSAccountSummary{}, Items: []RDSSecret{}}
+	for _, c := range configs {
+		inv, ok, e := s.rdsSnapshot(c.ID)
+		if e != nil {
+			return v, e
+		}
+		if !ok {
+			id := c.ExpectedAccountID
+			if a, _, exists, er := s.AccountSnapshot(c.ID); er == nil && exists && a.ID != "" {
+				id = a.ID
+			}
+			if id == "" {
+				id = c.ID
+			}
+			inv = RDSInventory{AccountID: id, Status: "pending", Regions: c.rdsRegions()}
+		}
+		v.Accounts = append(v.Accounts, RDSAccountSummary{AccountID: inv.AccountID, AccountName: c.Name, Status: inv.Status, Error: inv.Error, SyncedAt: inv.SyncedAt, Regions: inv.Regions, Count: len(inv.Items)})
+		for _, it := range inv.Items {
+			it.AccountName = c.Name
+			if it.Warnings == nil {
+				it.Warnings = []string{}
+			}
+			v.Items = append(v.Items, it)
+		}
+	}
+	return v, nil
 }
