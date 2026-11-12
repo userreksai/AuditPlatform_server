@@ -44,7 +44,7 @@ type AccountConfig struct {
 	AccessKeyID       string `yaml:"access_key_id"`
 	SecretAccessKey   string `yaml:"secret_access_key"`
 	SessionToken      string `yaml:"session_token"`
-	// RDSRegions 为采集 RDS 主密码托管信息的区域；为空时只采集 region。
+	// RDSRegions 为采集 RDS 主密码托管信息的区域；为空时自动采集账号内全部已启用区域。
 	RDSRegions []string `yaml:"rds_regions"`
 }
 

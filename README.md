@@ -61,7 +61,7 @@ accounts:
     access_key_id: "REPLACE_ME"
     secret_access_key: "REPLACE_ME"
     session_token: "" # 临时凭证可填写；到期后需要更新配置
-    rds_regions: ["us-east-1", "ap-southeast-1"] # 可选：采集 RDS 主密码托管信息的区域，默认同 region
+    rds_regions: [] # 可选：留空自动采集全部已启用区域；填写如 ["ap-southeast-1"] 则只采集指定区域
   - id: "another-account"
     name: "另一个账号"
     region: "us-east-1"
@@ -148,4 +148,4 @@ sudo dnf install -y libatomic libstdc++
 
 ## SecretsManager 页面（RDS 主用户密码托管）
 
-每次获取时，在 IAM 采集成功后按 `rds_regions` 采集 RDS 实例/集群的主用户密码是否已迁移至 Secrets Manager，并通过 `DescribeSecret` 核验轮换配置（不读取密码值）。页面字段：账号名称、AWS 账号 ID、区域、实例/集群名称、主用户名、是否已迁移至 Secrets Manager、迁移核验结论、实际轮换周期、自动轮换、上次轮换时间（北京时间）、下次轮换最晚时间（北京时间）。采集身份需额外授予 `rds:DescribeDBInstances`、`rds:DescribeDBClusters`、`secretsmanager:DescribeSecret`，见 [deploy/iam-read-policy.json](deploy/iam-read-policy.json) 与 [docs/AWS_API.md](docs/AWS_API.md)。接口：`GET /api/rds-secrets`。
+每次获取时，在 IAM 采集成功后按 `rds_regions`（留空=全部已启用区域）采集 RDS 实例/集群的主用户密码是否已迁移至 Secrets Manager，并通过 `DescribeSecret` 核验轮换配置（不读取密码值）。页面字段：账号名称、AWS 账号 ID、区域、实例/集群名称、主用户名、是否已迁移至 Secrets Manager、迁移核验结论、实际轮换周期、自动轮换、上次轮换时间（北京时间）、下次轮换最晚时间（北京时间）。采集身份需额外授予 `ec2:DescribeRegions`、`rds:DescribeDBInstances`、`rds:DescribeDBClusters`、`secretsmanager:DescribeSecret`，见 [deploy/iam-read-policy.json](deploy/iam-read-policy.json) 与 [docs/AWS_API.md](docs/AWS_API.md)。接口：`GET /api/rds-secrets`。

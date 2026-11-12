@@ -20,7 +20,8 @@
 
 | 官方 API | 本平台用途 |
 | --- | --- |
-| [DescribeDBInstances](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBInstances.html) / [DescribeDBClusters](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBClusters.html) | 按 `rds_regions`（默认为账号 `region`）逐区域翻页，取实例/集群标识、引擎、`MasterUsername` 与 `MasterUserSecret`（SecretArn、SecretStatus、KmsKeyId）。存在 MasterUserSecret 即“已迁移至 Secrets Manager”。属于集群的实例在集群行展示。 |
+| [EC2 DescribeRegions](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeRegions.html) | 未配置 `rds_regions` 时，获取账号已启用的全部区域（未选择加入的区域不返回）。调用失败时退回账号 `region` 并标记部分成功。 |
+| [DescribeDBInstances](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBInstances.html) / [DescribeDBClusters](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBClusters.html) | 按 `rds_regions`（未配置则为全部已启用区域）逐区域翻页，取实例/集群标识、引擎、`MasterUsername` 与 `MasterUserSecret`（SecretArn、SecretStatus、KmsKeyId）。存在 MasterUserSecret 即“已迁移至 Secrets Manager”。属于集群的实例在集群行展示。 |
 | [DescribeSecret](https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_DescribeSecret.html) | 读取 `RotationEnabled`、`RotationRules`（AutomaticallyAfterDays / ScheduleExpression / Duration）、`LastRotatedDate`、`NextRotationDate`、`OwningService`、`DeletedDate`。只读元数据，不调用 GetSecretValue，不读取密码。 |
 
 - 实际轮换周期：优先 AutomaticallyAfterDays，否则解析 ScheduleExpression 的 rate()；cron 原样展示。
@@ -71,6 +72,7 @@
       "Sid": "AuditPlatformReadRDSSecrets",
       "Effect": "Allow",
       "Action": [
+        "ec2:DescribeRegions",
         "rds:DescribeDBInstances",
         "rds:DescribeDBClusters",
         "secretsmanager:DescribeSecret"

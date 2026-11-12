@@ -14,6 +14,7 @@
     "Sid": "AuditPlatformReadRDSSecrets",
     "Effect": "Allow",
     "Action": [
+      "ec2:DescribeRegions",
       "rds:DescribeDBInstances", "rds:DescribeDBClusters",
       "secretsmanager:DescribeSecret"
     ],

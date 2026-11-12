@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
@@ -283,11 +284,28 @@ type RDSCollector interface {
 	CollectRDS(ctx context.Context, c AccountConfig, a Account) RDSInventory
 }
 
+// rdsRegions 返回配置的区域；为空表示自动发现账号内全部已启用区域。
 func (c AccountConfig) rdsRegions() []string {
-	if len(c.RDSRegions) == 0 {
-		return []string{c.Region}
+	return append([]string{}, c.RDSRegions...)
+}
+
+// discoverRegions 通过 EC2 DescribeRegions 获取账号已启用的全部区域（不含未选择加入的区域）。
+func discoverRegions(ctx context.Context, cfg aws.Config) ([]string, error) {
+	out, err := ec2.NewFromConfig(cfg).DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
+	if err != nil {
+		return nil, err
 	}
-	return c.RDSRegions
+	regions := []string{}
+	for _, r := range out.Regions {
+		if name := aws.ToString(r.RegionName); name != "" {
+			regions = append(regions, name)
+		}
+	}
+	sort.Strings(regions)
+	if len(regions) == 0 {
+		return nil, fmt.Errorf("DescribeRegions 未返回区域")
+	}
+	return regions, nil
 }
 
 func secretRegion(arn, fallback string) string {
@@ -306,6 +324,15 @@ func (collector AWSCollector) CollectRDS(ctx context.Context, c AccountConfig, a
 		return inv
 	}
 	issues := []string{}
+	if len(inv.Regions) == 0 {
+		regions, e := discoverRegions(ctx, cfg)
+		if e != nil {
+			// 自动发现失败时退回账号默认区域，并标记为部分成功。
+			issues = append(issues, "EC2 DescribeRegions: "+safeError(e)+"，仅采集默认区域 "+c.Region)
+			regions = []string{c.Region}
+		}
+		inv.Regions = regions
+	}
 	failedRegions := 0
 	secretClients := map[string]*secretsmanager.Client{}
 	describe := func(arn, region string) *SecretMeta {
@@ -392,7 +419,7 @@ func (collector AWSCollector) CollectRDS(ctx context.Context, c AccountConfig, a
 	})
 	if len(issues) > 0 {
 		inv.Status = "partial"
-		if failedRegions == len(inv.Regions) && len(inv.Items) == 0 {
+		if failedRegions > 0 && failedRegions == len(inv.Regions) && len(inv.Items) == 0 {
 			inv.Status = "error"
 		}
 		inv.Error = strings.Join(issues, "；")
