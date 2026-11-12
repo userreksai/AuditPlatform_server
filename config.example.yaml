@@ -25,3 +25,4 @@ accounts: []
 #     access_key_id: "REPLACE_ME"
 #     secret_access_key: "REPLACE_ME"
 #     session_token: "" # optional temporary credentials
+#     rds_regions: ["us-east-1", "ap-southeast-1"] # optional: regions scanned for RDS master-password / Secrets Manager status; defaults to region

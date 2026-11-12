@@ -10,5 +10,13 @@
       "iam:GenerateCredentialReport", "iam:GetCredentialReport"
     ],
     "Resource": "*"
+  }, {
+    "Sid": "AuditPlatformReadRDSSecrets",
+    "Effect": "Allow",
+    "Action": [
+      "rds:DescribeDBInstances", "rds:DescribeDBClusters",
+      "secretsmanager:DescribeSecret"
+    ],
+    "Resource": "*"
   }]
 }
